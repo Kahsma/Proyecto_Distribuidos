@@ -4,7 +4,7 @@ import org.zeromq.ZMQ;
 
 public class Monitor {
     public static void main(String[] args) {
-        String sensorIpAddress = "192.168.0.11"; // Dirección IP del sensor
+        String sensorIpAddress = "DIRECCION IP DEL SENSOR(XXX.XXX.X.XXX)"; // Dirección IP del sensor
         ZMQ.Context context = ZMQ.context(1);
         ZMQ.Socket subscriber = context.socket(ZMQ.SUB);
 
