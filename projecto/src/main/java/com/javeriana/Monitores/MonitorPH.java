@@ -1,15 +1,15 @@
-package com.javeriana;
+package com.javeriana.Monitores;
 
 import org.zeromq.ZMQ;
 
-public class Monitor {
+public class MonitorPH {
     public static void main(String[] args) {
-        String sensorIpAddress = "DIRECCION IP DEL SENSOR(XXX.XXX.X.XXX)"; // Dirección IP del sensor
+        String sensorIpAddress = "192.168.0.11"; // Dirección IP del sensor
         ZMQ.Context context = ZMQ.context(1);
         ZMQ.Socket subscriber = context.socket(ZMQ.SUB);
 
         // Conéctate al sensor (asegúrate de utilizar la dirección y puerto correctos)
-        subscriber.connect("tcp://" + sensorIpAddress + ":5556");
+        subscriber.connect("tcp://" + sensorIpAddress + ":5557");
 
         // Suscríbete a todos los mensajes (en blanco)
         subscriber.subscribe("".getBytes());

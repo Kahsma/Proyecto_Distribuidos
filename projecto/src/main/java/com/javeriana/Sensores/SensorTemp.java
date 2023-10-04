@@ -1,8 +1,8 @@
-package com.javeriana;
+package com.javeriana.Sensores;
 
 import org.zeromq.ZMQ;
 
-public class Sensor {
+public class SensorTemp {
     public static void main(String[] args) {
         ZMQ.Context context = ZMQ.context(1);
         ZMQ.Socket publisher = context.socket(ZMQ.PUB);
