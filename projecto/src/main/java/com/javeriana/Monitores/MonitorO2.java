@@ -4,7 +4,7 @@ import org.zeromq.ZMQ;
 
 public class MonitorO2 {
     public static void main(String[] args) {
-        String sensorIpAddress = "192.168.0.11"; // Dirección IP del sensor
+        String sensorIpAddress = "192.168.0.3"; // Dirección IP del sensor
         ZMQ.Context context = ZMQ.context(1);
         ZMQ.Socket subscriber = context.socket(ZMQ.SUB);
 
@@ -29,6 +29,6 @@ public class MonitorO2 {
     // Método para procesar mediciones
     private static void processMeasurement(String measurement) {
         // Implementa la lógica de procesamiento de mediciones aquí
-        System.out.println("Medición recibida en el monitor: " + measurement);
+        System.out.println("Medición recibida en el monitor O2: " + measurement);
     }
 }
