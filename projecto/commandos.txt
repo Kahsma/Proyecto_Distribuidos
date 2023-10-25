@@ -1,18 +1,9 @@
 mvn exec:java -Dexec.mainClass="com.javeriana.Sensor" -Dexec.args="-t oxygeno -i 1000 -c config.txt"
 
 
+mvn exec:java -Dexec.mainClass="com.javeriana.Monitor" -Dexec.args="-t oxygeno"
 
 
 
- public enum SensorType {
-        oxygeno, ph, temperatura
-    }
 
-    @Option(name = "-t", aliases = "--sensorType", required = true, usage = "Sensor type (oxygeno, ph, or temperatura)")
-    private SensorType sensorType;
 
-    @Option(name = "-i", aliases = "--interval", required = true, usage = "Time interval in milliseconds")
-    private int interval;
-
-    @Option(name = "-c", aliases = "--configFile", required = true, usage = "Configuration file name")
-    private String configFile;
