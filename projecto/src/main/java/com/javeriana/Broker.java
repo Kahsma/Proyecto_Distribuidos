@@ -8,24 +8,25 @@ import org.zeromq.ZMQ.Socket;
 public class Broker {
     public static void main(String[] args) throws Exception {
         try (ZContext context = new ZContext()) {
-            Socket frontend = context.createSocket(SocketType.PUB);
-            Socket backend = context.createSocket(SocketType.SUB);
+            // Socket facing clients
+            Socket frontend = context.createSocket(SocketType.REP);
             frontend.bind("tcp://*:5559");
-            backend.connect("tcp://localhost:5560");
 
-            frontend.setHWM(0); // Set the high-water mark to prevent message loss
+            // Socket for publishing messages to subscribers
+            Socket backend = context.createSocket(SocketType.PUB);
+            backend.bind("tcp://*:5560");
 
             System.out.println("Launch and connect broker.");
 
-            // Subscribe to specific topics for each monitor
-            backend.subscribe("Sensor1".getBytes());
-            backend.subscribe("Monitor2".getBytes());
-            backend.subscribe("Monitor3".getBytes());
-
             while (!Thread.currentThread().isInterrupted()) {
-                // Receive a message from subscribers and publish it
-                byte[] message = backend.recv(0);
-                frontend.send(message);
+
+                byte[] reply = frontend.recv(0);
+                backend.send(reply, 0);
+                String messageReceived = new String(reply, ZMQ.CHARSET);
+                System.out.println("Received from client: " + messageReceived);
+                // Handle incoming requests from sensors
+
+                frontend.send("nominal", 0);
             }
         }
     }
