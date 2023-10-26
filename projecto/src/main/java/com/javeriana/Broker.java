@@ -14,7 +14,7 @@ public class Broker {
 
             // Socket for publishing messages to subscribers
             Socket backend = context.createSocket(SocketType.PUB);
-            backend.bind("tcp://*:5560");
+            backend.bind("tcp://192.168.0.7:5560");// IP DE DONDE SE ESTA CORRIENDO EL BROKER
 
             System.out.println("Launch and connect broker.");
 

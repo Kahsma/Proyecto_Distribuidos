@@ -25,7 +25,7 @@ public class Monitor {
 
             try (ZContext context = new ZContext()) {
                 Socket subscriber = context.createSocket(SocketType.SUB);
-                subscriber.connect("tcp://localhost:5560");
+                subscriber.connect("tcp://localhost:5560");// IP DE DONDE SE ESTA CORRIENDO EL BROKER
 
                 String monitorTypeString = monitor.monitorType.toString() + "#";
                 subscriber.subscribe(monitorTypeString.getBytes());
