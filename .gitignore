@@ -19,3 +19,4 @@ buildNumber.properties
 *.idea
 #Vs Code
 *.vscode
+*.json
