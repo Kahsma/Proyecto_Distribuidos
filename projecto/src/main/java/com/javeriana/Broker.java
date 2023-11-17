@@ -10,11 +10,11 @@ public class Broker {
         try (ZContext context = new ZContext()) {
             // Socket facing clients
             Socket frontend = context.createSocket(SocketType.REP);
-            frontend.bind("tcp://*:5559");
+            frontend.bind("tcp://localhost:5559");
 
             // Socket for publishing messages to subscribers
             Socket backend = context.createSocket(SocketType.PUB);
-            backend.bind("tcp://localhost:5560");// IP DE DONDE SE ESTA CORRIENDO EL BROKER
+            backend.bind("tcp://192.168.0.4:5560");// IP DE DONDE SE ESTA CORRIENDO EL BROKER
 
             System.out.println("Launch and connect broker.");
 
