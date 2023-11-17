@@ -12,7 +12,8 @@ public class SistemaDeCalidad {
         try (ZContext context = new ZContext()) {
             // ZeroMQ socket to receive alerts from monitors
             ZMQ.Socket calidadSocket = context.createSocket(SocketType.PULL);
-            calidadSocket.bind("tcp://192.168.0.4:5555"); // Update with the correct IP and port
+            calidadSocket.bind("tcp://192.168.0.4:5555"); // Update with the correct IP and port DIRRECCION DE DONDE SE
+                                                          // ESTA CORRIENDO EL PROCESO sistema de calidad
 
             System.out.println("Sistema de Calidad is ready to receive alerts.");
 
