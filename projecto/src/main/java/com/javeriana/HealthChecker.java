@@ -14,34 +14,39 @@ public class HealthChecker {
 
     private static final int CHECK_INTERVAL = 5000; // Interval in milliseconds
 
-    // Map monitor types to their respective IP addresses and ports
-    private static final Map<SensorType, String> MONITOR_ADDRESSES = new HashMap<>();
+    private final ZContext context;
+    private final Map<SensorType, Socket> healthCheckSockets;
+
+    private static final Map<SensorType, String> MONITOR_BASE_ADDRESSES = new HashMap<>();
 
     static {
-        MONITOR_ADDRESSES.put(SensorType.temperatura, "tcp://192.168.0.4:5562");
-        MONITOR_ADDRESSES.put(SensorType.ph, "tcp://192.168.0.4:5563");
-        MONITOR_ADDRESSES.put(SensorType.oxygeno, "tcp://192.168.0.4:5564");
+        MONITOR_BASE_ADDRESSES.put(SensorType.temperatura, "tcp://10.43.101.112");
+        MONITOR_BASE_ADDRESSES.put(SensorType.ph, "tcp://10.43.101.124");
+        MONITOR_BASE_ADDRESSES.put(SensorType.oxygeno, "tcp://10.43.101.124");
+    }
+
+    public HealthChecker(ZContext context) {
+        this.context = context;
+        this.healthCheckSockets = createHealthCheckSockets(context);
     }
 
     public static void main(String[] args) {
-        HealthChecker healthChecker = new HealthChecker();
+        try (ZContext context = new ZContext()) {
+            HealthChecker healthChecker = new HealthChecker(context);
 
-        // Start the health checking process
-        healthChecker.startHealthCheck();
+            // Start the health checking process
+            healthChecker.startHealthCheck();
+
+            // The health checking process runs indefinitely, so this line is not reached
+            // unless interrupted
+            System.out.println("Health checking process interrupted. Closing the application.");
+        }
     }
 
     public void startHealthCheck() {
-        try (ZContext context = new ZContext()) {
-            // Create sockets for each monitor type
-            Map<SensorType, Socket> healthCheckSockets = createHealthCheckSockets(context);
-
+        try {
             // Create a Poller to check for socket events
-            ZMQ.Poller poller = context.createPoller(healthCheckSockets.size());
-
-            // Register sockets with the Poller
-            for (Socket socket : healthCheckSockets.values()) {
-                poller.register(socket, ZMQ.Poller.POLLIN);
-            }
+            ZMQ.Poller poller = createPoller();
 
             while (!Thread.currentThread().isInterrupted()) {
                 // Send health check requests for each monitor type
@@ -50,7 +55,7 @@ public class HealthChecker {
                 }
 
                 // Use the Poller to wait for a response or timeout
-                if (poller.poll(1000) > 0) {
+                if (poller.poll(5000) > 0) {
                     // If there's a response, receive and process it
                     for (int i = 0; i < poller.getSize(); i++) {
                         if (poller.pollin(i)) {
@@ -78,16 +83,29 @@ public class HealthChecker {
                     System.out.println("Health check thread interrupted");
                     Thread.currentThread().interrupt(); // Re-interrupt the thread
                 }
+
+                // Update the addresses after processing all the responses
+                updateMonitorAddresses();
+                // Recreate the poller with the updated addresses
+                poller.close();
+                poller = createPoller();
             }
+        } finally {
+            // Ensure that the sockets are closed when the health checking process is
+            // finished
+            healthCheckSockets.values().forEach(Socket::close);
         }
     }
 
     private Map<SensorType, Socket> createHealthCheckSockets(ZContext context) {
         Map<SensorType, Socket> healthCheckSockets = new HashMap<>();
 
-        for (Map.Entry<SensorType, String> entry : MONITOR_ADDRESSES.entrySet()) {
+        for (Map.Entry<SensorType, String> entry : MONITOR_BASE_ADDRESSES.entrySet()) {
             SensorType sensorType = entry.getKey();
-            String address = entry.getValue();
+            String baseAddress = entry.getValue();
+
+            int healthCheckPort = getHealthCheckPort(sensorType);
+            String address = baseAddress + ":" + healthCheckPort;
 
             Socket socket = context.createSocket(SocketType.REQ);
             socket.connect(address);
@@ -101,27 +119,82 @@ public class HealthChecker {
         // Before sending a health check request
         System.out.println("Health Check Socket State before send: " + healthCheckSocket.getEvents());
 
+        boolean isUpdateNeeded = false;
+
         try {
             // Send a health check request for a specific monitor type
             healthCheckSocket.send(sensorType.toString().getBytes(ZMQ.CHARSET), 0);
+            System.out.println("Health Check Socket State after send: " + healthCheckSocket.getEvents());
+
+            // Wait for a short period before sending the next health check request
+            try {
+                Thread.sleep(100);
+            } catch (InterruptedException e) {
+                Thread.currentThread().interrupt();
+            }
+
+            // Check if there's no response within the specified timeout
+            if (healthCheckSocket.getEvents() == ZMQ.Poller.POLLIN) {
+                // Process the response
+                processMonitorResponse(healthCheckSocket, sensorType);
+            } else {
+                // No response received, start a new process
+                System.out.println(
+                        sensorType + " Monitor did not respond within the specified timeout. Starting a new process.");
+                startMonitorProcess(sensorType);
+                isUpdateNeeded = true;
+            }
         } catch (ZMQException e) {
             // Handle the exception when the monitor is not reachable
             System.out.println("Error sending health check request to " + sensorType + " monitor: " + e.getMessage());
 
             // Start a new process for the specific sensor type
             startMonitorProcess(sensorType);
+            System.out.println(MONITOR_BASE_ADDRESSES.get(sensorType));
+            isUpdateNeeded = true;
+        }
 
+        if (isUpdateNeeded) {
+            // Update the address after processing the response or catching an exception
+            updateMonitorAddresses(sensorType);
         }
 
         // After sending a health check request
         System.out.println("Health Check Socket State after send: " + healthCheckSocket.getEvents());
+    }
 
-        // Wait for a short period before sending the next health check request
-        try {
-            Thread.sleep(100);
-        } catch (InterruptedException e) {
-            Thread.currentThread().interrupt();
+    private Map<SensorType, String> previousAddresses = new HashMap<>();
+
+    private void updateMonitorAddresses() {
+        String ipAddress = "tcp://10.43.101.124"; /* the new IP address you want to set */
+
+        for (SensorType sensorType : MONITOR_BASE_ADDRESSES.keySet()) {
+            String previousAddress = previousAddresses.getOrDefault(sensorType, "");
+            if (!previousAddress.equals(MONITOR_BASE_ADDRESSES.get(sensorType))) {
+                System.out.println(
+                        "Changing address for " + sensorType + " to: " + MONITOR_BASE_ADDRESSES.get(sensorType));
+            }
+            previousAddresses.put(sensorType, MONITOR_BASE_ADDRESSES.get(sensorType));
         }
+
+        // Print a message when updating addresses
+        System.out.println("Updated monitor addresses");
+
+        // Recreate health check sockets with the updated addresses
+        this.healthCheckSockets.values().forEach(Socket::close);
+        this.healthCheckSockets.clear();
+        this.healthCheckSockets.putAll(createHealthCheckSockets(context));
+
+        // Print the current values of the addresses after updating
+        for (SensorType sensorType : MONITOR_BASE_ADDRESSES.keySet()) {
+            System.out.println("Current address for " + sensorType + ": " + MONITOR_BASE_ADDRESSES.get(sensorType));
+        }
+    }
+
+    private void updateMonitorAddresses(SensorType sensorType) {
+        String ipAddress = "tcp://10.43.101.124"; /* the new IP address you want to set */
+
+        MONITOR_BASE_ADDRESSES.put(sensorType, ipAddress);
     }
 
     private void startMonitorProcess(SensorType sensorType) {
@@ -159,6 +232,7 @@ public class HealthChecker {
         String response = healthCheckSocket.recvStr(0);
         if (response != null) {
             System.out.println(sensorType + " Monitor received: " + response);
+            // Add logic to handle the response as needed
         } else {
             // Handle the case when there's no response within the specified timeout
             System.out.println(sensorType + " Monitor did not respond within the specified timeout");
@@ -173,4 +247,27 @@ public class HealthChecker {
         }
         throw new IllegalArgumentException("Socket not found for the given SensorType");
     }
+
+    private int getHealthCheckPort(SensorType sensorType) {
+        // Return different port numbers for each sensor type
+        switch (sensorType) {
+            case temperatura:
+                return 5562;
+            case ph:
+                return 5563;
+            case oxygeno:
+                return 5564;
+            default:
+                throw new IllegalArgumentException("Invalid sensor type");
+        }
+    }
+
+    private ZMQ.Poller createPoller() {
+        ZMQ.Poller poller = context.createPoller(healthCheckSockets.size());
+        for (Socket socket : healthCheckSockets.values()) {
+            poller.register(socket, ZMQ.Poller.POLLIN);
+        }
+        return poller;
+    }
+
 }
