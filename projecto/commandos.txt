@@ -1,9 +1,0 @@
-mvn exec:java -Dexec.mainClass="com.javeriana.Sensor" -Dexec.args="-t oxygeno -i 1000 -c config.txt"
-
-
-mvn exec:java -Dexec.mainClass="com.javeriana.Monitor" -Dexec.args="-t oxygeno"
-
-
-
-
-
