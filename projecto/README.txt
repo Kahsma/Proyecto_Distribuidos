@@ -2,7 +2,14 @@ Requerimientos:
 - Java 19 como minimo
 - Ultima version de maven
 
-Commandos
+Orden de ejecución:
+1. Broker
+2. Sensores
+3. Monitores 
+4. Sistema de Calidad
+5. HealthChecker
+
+Commandos:
 
 //para todos se toca que cambiar las direcciones dentro del codigo. revisar comentarios.
 
