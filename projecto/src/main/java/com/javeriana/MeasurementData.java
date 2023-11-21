@@ -7,18 +7,18 @@ public class MeasurementData implements Serializable {
     private double measurement;
     private String timestamp;
 
-    // Default constructor (required for Jackson)
+    // Constructor vacío (requerido para Jackson)
     public MeasurementData() {
     }
 
-    // Constructor with parameters
+    // Constructor con parámetros
     public MeasurementData(String sensorType, double measurement, String timestamp) {
         this.sensorType = sensorType;
         this.measurement = measurement;
         this.timestamp = timestamp;
     }
 
-    // Getters and setters (required for Jackson)
+    // Getters y setters
     public String getSensorType() {
         return sensorType;
     }

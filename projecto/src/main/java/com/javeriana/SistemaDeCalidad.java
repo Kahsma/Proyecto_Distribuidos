@@ -6,19 +6,20 @@ import org.zeromq.ZMQ;
 
 import java.nio.charset.StandardCharsets;
 
+// Definición de la clase SistemaDeCalidad
 public class SistemaDeCalidad {
 
+    // Método principal
     public static void main(String[] args) {
         try (ZContext context = new ZContext()) {
-            // ZeroMQ socket to receive alerts from monitors
+            // Socket ZeroMQ para recibir alertas de los monitores
             ZMQ.Socket calidadSocket = context.createSocket(SocketType.PULL);
-            calidadSocket.bind("tcp://192.168.0.4:5555"); // Update with the correct IP and port DIRRECCION DE DONDE SE
-                                                          // ESTA CORRIENDO EL PROCESO sistema de calidad
+            calidadSocket.bind("tcp://192.168.0.4:5555"); // IP y puerto del "sistema de calidad"
 
             System.out.println("Sistema de Calidad is ready to receive alerts.");
 
             while (true) {
-                // Receive and display the alert message
+                // Recibir y mostrar el mensaje de alerta
                 byte[] alertMessageBytes = calidadSocket.recv(0);
                 String alertMessage = new String(alertMessageBytes, StandardCharsets.UTF_8);
                 System.out.println("Received alert: " + alertMessage);
